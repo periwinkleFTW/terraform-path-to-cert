@@ -31,7 +31,7 @@ resource "aws_subnet" "public_subnet" {
   }
 }
 
-resource "aws_subnet" "private_subnets" {
+resource "aws_subnet" "private_subnet" {
   vpc_id            = aws_vpc.vpc.id
   cidr_block        = var.private_subnet_cidr
   availability_zone = data.aws_availability_zones.available.names[1]
@@ -140,3 +140,67 @@ resource "aws_internet_gateway" "internet_gateway" {
     Terraform = "true"
   }
 }
+
+# NAT gateway EIP
+resource "aws_eip" "nat_gateway_eip" {
+  vpc = true
+  depends_on = [
+    aws_internet_gateway.internet_gateway
+  ]
+
+  tags = {
+    Name      = "demo_nat_gateway"
+    Terraform = "true"
+  }
+}
+
+resource "aws_nat_gateway" "nat_gateway" {
+  depends_on    = [aws_subnet.public_subnet]
+  allocation_id = aws_eip.nat_gateway_eip.id
+  subnet_id     = aws_subnet.public_subnet.id
+  tags = {
+    Name      = "demo_nat_gateway"
+    Terraform = "true"
+  }
+}
+
+# Public route table
+resource "aws_route_table" "public_route_table" {
+  vpc_id = aws_vpc.vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.internet_gateway.id
+  }
+  tags = {
+    Name      = "demo_public_rtb"
+    Terraform = "true"
+  }
+}
+
+resource "aws_route_table_association" "public" {
+  depends_on     = [aws_subnet.public_subnet]
+  route_table_id = aws_route_table.public_route_table.id
+  subnet_id      = aws_subnet.public_subnet.id
+}
+
+# Private route table
+resource "aws_route_table" "private_route_table" {
+  vpc_id = aws_vpc.vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.nat_gateway.id
+  }
+  tags = {
+    Name      = "demo_public_rtb"
+    Terraform = "true"
+  }
+}
+
+resource "aws_route_table_association" "private" {
+  depends_on     = [aws_subnet.private_subnet]
+  route_table_id = aws_route_table.private_route_table.id
+  subnet_id      = aws_subnet.private_subnet.id
+}
+
