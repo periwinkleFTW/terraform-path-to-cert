@@ -130,3 +130,13 @@ resource "aws_security_group_rule" "private_in" {
 
   security_group_id = aws_security_group.private_sg.id
 }
+
+# Internet gateway
+resource "aws_internet_gateway" "internet_gateway" {
+  vpc_id = aws_vpc.vpc.id
+
+  tags = {
+    Name      = "demo_igw"
+    Terraform = "true"
+  }
+}
