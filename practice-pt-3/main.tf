@@ -205,7 +205,7 @@ resource "aws_route_table_association" "private" {
   subnet_id      = aws_subnet.private_subnet.id
 }
 
-module "server" {
+module "my_server_module" {
   source          = "./server"
   subnet_id       = aws_subnet.public_subnet.id
   security_groups = [aws_security_group.public_sg.id]
