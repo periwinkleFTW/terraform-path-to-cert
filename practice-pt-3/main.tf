@@ -206,7 +206,15 @@ resource "aws_route_table_association" "private" {
 }
 
 module "my_server_module" {
+  # location of module directory
   source          = "./server"
   subnet_id       = aws_subnet.public_subnet.id
   security_groups = [aws_security_group.public_sg.id]
+}
+
+module "another_server_from_a_module" {
+  # location of module directory
+  source          = "./server"
+  subnet_id       = aws_subnet.private_subnet.id
+  security_groups = [aws_security_group.private_sg.id]
 }
