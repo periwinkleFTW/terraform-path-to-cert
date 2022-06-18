@@ -207,14 +207,77 @@ resource "aws_route_table_association" "private" {
 
 module "my_server_module" {
   # location of module directory
-  source          = "./server"
+  source          = "./modules/server"
   subnet_id       = aws_subnet.public_subnet.id
   security_groups = [aws_security_group.public_sg.id]
 }
 
 module "another_server_from_a_module" {
   # location of module directory
-  source          = "./server"
+  source          = "./modules/server"
   subnet_id       = aws_subnet.private_subnet.id
   security_groups = [aws_security_group.private_sg.id]
+}
+
+module "_server_from_local_module" {
+  # local module
+  source          = "./modules/server"
+  subnet_id       = aws_subnet.private_subnet.id
+  security_groups = [aws_security_group.private_sg.id]
+}
+
+
+data "aws_ami" "ubuntu" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["099720109477"]
+}
+
+module "autoscaling_from_registry" {
+  source  = "terraform-aws-modules/autoscaling/aws"
+  version = "6.5.0"
+
+  name = "demo_module_asg"
+
+  vpc_zone_identifier = [aws_subnet.private_subnet.id]
+  min_size            = 0
+  max_size            = 1
+  desired_capacity    = 1
+
+  image_id      = data.aws_ami.ubuntu.id
+  instance_type = "t2.micro"
+
+  tags = {
+    Name      = "Web servers from asg module"
+    Terraform = "true"
+  }
+}
+
+module "autoscaling_from_github" {
+  source  = "github.com/terraform-aws-modules/terraform-aws-autoscaling"
+
+  name = "demo_module_asg"
+
+  vpc_zone_identifier = [aws_subnet.private_subnet.id]
+  min_size            = 0
+  max_size            = 1
+  desired_capacity    = 1
+
+  image_id      = data.aws_ami.ubuntu.id
+  instance_type = "t2.micro"
+
+  tags = {
+    Name      = "Web servers from asg module"
+    Terraform = "true"
+  }
 }
